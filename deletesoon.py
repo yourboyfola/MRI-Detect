@@ -1,6 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras.preprocessing import image
-from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
+from tensorflow.keras.applications import EfficientNetB0
+from tensorflow.keras.applications.efficientnet import preprocess_input
 import numpy as np
 
 # Load the saved model
@@ -39,5 +40,5 @@ def predict_tumor(img_path):
     return tumor_types[predicted_class], confidence
 
 # Test on a new image!
-img_path = r"C:\Users\USER\MRI-Detect\data\Brain_Tumor\Practice\axial_glioma.jpg"
+img_path = r"C:\Users\USER\MRI-Detect\data\Brain_Tumor\Practice\randomglioma.jpg"
 predict_tumor(img_path)
