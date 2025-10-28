@@ -5,8 +5,8 @@ from tensorflow.keras import layers, models
 import pandas as pd
 from sklearn.utils.class_weight import compute_class_weight
 from tensorflow.keras.preprocessing import image
-from tensorflow.keras.applications import EfficientNetB0
-from tensorflow.keras.applications.efficientnet import preprocess_input
+from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 
 val_dir = 'data/Brain_Tumors/Testing'
 train_dir = 'data/Brain_Tumors/Training'
@@ -63,8 +63,8 @@ val_ds = val_ds.prefetch(buffer_size=AUTOTUNE)
 print("Training batches:", len(train_ds))
 print("Validation batches:", len(val_ds))
 
-# Using EfficientNetB0 as the base model
-base_model = EfficientNetB0(
+# Using MobileNetV2 as the base model
+base_model = MobileNetV2(
     input_shape=(224, 224, 3),
     include_top=False,
     weights='imagenet'
@@ -99,7 +99,6 @@ reduce_lr = tf.keras.callbacks.ReduceLROnPlateau(
 )
 
 optimizer = tf.keras.optimizers.Adam(learning_rate=5e-4)
-
 model.compile(
     optimizer=optimizer,
     loss='sparse_categorical_crossentropy',
@@ -113,12 +112,19 @@ model.summary()
 # Get all labels from training data
 train_labels = np.concatenate([y for x, y in train_ds], axis=0)
 
+checkpoint = tf.keras.callbacks.ModelCheckpoint(
+    'best_model_backup.keras',  # ← Change to .keras
+    monitor='val_accuracy',
+    save_best_only=True,
+    verbose=1
+)
+
 # Use in training
 history = model.fit(
     train_ds,
     validation_data=val_ds,
     epochs=20,
-    callbacks=[early_stopping, reduce_lr]
+    callbacks=[early_stopping, reduce_lr, checkpoint]
 )
 # PHASE 2: Fine-tuning (unfreeze some layers)
 print("\n🔥 Phase 2: Fine-tuning top layers...")
@@ -140,7 +146,7 @@ history_fine = model.fit(
     train_ds,
     validation_data=val_ds,
     epochs=15,
-    callbacks=[early_stopping, reduce_lr],
+    callbacks=[early_stopping, reduce_lr, checkpoint],
 )
 
 # Plot training history
@@ -170,8 +176,9 @@ plt.show()
 
 print(f"\n✅ Final Validation Accuracy: {history_fine.history['val_accuracy'][-1]:.2%}")
 
-model.save('brain_tumor_classifier.keras')
-print("💾 Model saved!")
+print("\n💾 Saving model...")
+model.save('brain_tumor_final.keras')
+print("✅ Model saved as brain_tumor_final.keras")
 
 def predict_tumor(img_path):
     """Predict tumor type from image path"""
